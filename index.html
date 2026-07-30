@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ZHANG WEIRU | Portfolio</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --text-color: #ffffff;
+            --item-width: 320px;
+            --item-height: 199px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Helvetica Neue', Arial, sans-serif; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 2000px;
+            touch-action: none;
+        }
+
+        .world {
+            position: relative;
+            transform-style: preserve-3d;
+            cursor: grab;
+        }
+        .world:active { cursor: grabbing; }
+
+        .model-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform-style: preserve-3d;
+        }
+
+        .item {
+            position: absolute;
+            top: calc(var(--item-height) / -2);
+            left: 0;
+            width: var(--item-width);
+            height: var(--item-height);
+            transform-origin: left center;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            background-color: #111;
+            transition: box-shadow 0.3s, filter 0.3s, transform 3s cubic-bezier(0.25, 1, 0.5, 1);
+            cursor: pointer;
+        }
+        .item:hover {
+            filter: brightness(1.2);
+            box-shadow: 0 10px 40px rgba(255,255,255,0.2);
+        }
+        .item img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            pointer-events: none;
+            transform: rotateY(180deg);
+        }
+        .item.has-video::after {
+            content: '▶';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotateY(180deg);
+            width: 56px;
+            height: 56px;
+            background: rgba(0,0,0,0.55);
+            border: 2px solid rgba(255,255,255,0.85);
+            border-radius: 50%;
+            color: #fff;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-left: 4px;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+        }
+
+        .ui-panel {
+            position: fixed;
+            top: 40px;
+            left: 40px;
+            z-index: 1000;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            mix-blend-mode: difference;
+            color: #ffffff;
+        }
+        .ui-panel h1 {
+            font-size: 28px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+        .ui-panel .portfolio-description {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .ui-panel .portfolio-description .label {
+            font-size: 11px;
+            letter-spacing: 1.5px;
+            opacity: 0.7;
+            margin-top: 6px;
+        }
+
+        /* --- 通用 modal --- */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: #0a0a0a;
+            z-index: 9999;
+            display: none;
+        }
+        .modal.active { display: block; }
+
+        .modal-close {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.4);
+            color: #fff;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(6px);
+            transition: background 0.2s;
+        }
+        .modal-close:hover { background: rgba(255,255,255,0.15); }
+
+        /* --- 视频弹窗 --- */
+        #video-modal {
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        #video-modal.active { display: flex; }
+
+        .video-box {
+            position: relative;
+            width: min(80vw, 1280px);
+            max-height: 85vh;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+            border-radius: 4px;
+            overflow: hidden;
+            background: #000;
+        }
+        .video-box video {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-height: 85vh;
+            background: #000;
+        }
+
+        /* --- 作品集滚动阅读 --- */
+        .reader {
+            height: 100vh;
+            overflow-y: scroll;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: auto;
+            padding: 48px 20px 80px;
+            box-sizing: border-box;
+            touch-action: pan-y;
+        }
+
+        .reader-track {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .reader-track img {
+            display: block;
+            width: 100%;
+            height: auto;
+            background: #1a1a1a;
+            border-radius: 2px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        .reader-progress {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            background: rgba(0,0,0,0.55);
+            color: #ccc;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            letter-spacing: 1.5px;
+            z-index: 10001;
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(255,255,255,0.1);
+            pointer-events: none;
+            user-select: none;
+        }
+
+        @media (max-width: 768px) {
+            :root { --item-width: 200px; --item-height: 124px; }
+            .ui-panel { left: 20px; top: 20px; }
+            .ui-panel h1 { font-size: 20px; }
+            .video-box { width: 92vw; }
+            .modal-close { top: 14px; right: 14px; width: 38px; height: 38px; }
+            .reader { padding: 36px 12px 60px; }
+            .reader-track { gap: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ui-panel">
+        <h1>ZHANG WEIRU</h1>
+        <div class="portfolio-description">
+            <p class="label">WECHAT</p>
+            <p>Poppyhehe</p>
+            <p class="label">TEL</p>
+            <p>+86 135 2608 9191</p>
+            <p class="label">MAIL</p>
+            <p>zwrxn001@126.com</p>
+        </div>
+    </div>
+
+    <div class="world" id="world">
+        <div class="model-center" id="model">
+            <div class="item" data-idx="1"  data-type="reader" data-page="2"><img src="p1.jpg"  alt="项目 1"></div>
+            <div class="item" data-idx="2"  data-type="reader" data-page="12"><img src="p2.jpg"  alt="项目 2"></div>
+            <div class="item" data-idx="3"  data-type="reader" data-page="12"><img src="p3.jpg"  alt="项目 3"></div>
+            <div class="item" data-idx="4"  data-type="reader" data-page="17"><img src="p4.jpg"  alt="项目 4"></div>
+            <div class="item" data-idx="5"  data-type="reader" data-page="17"><img src="p5.jpg"  alt="项目 5"></div>
+            <div class="item" data-idx="6"  data-type="reader" data-page="17"><img src="p6.jpg"  alt="项目 6"></div>
+            <div class="item" data-idx="7"  data-type="reader" data-page="25"><img src="p7.jpg"  alt="项目 7"></div>
+            <div class="item" data-idx="8"  data-type="reader" data-page="25"><img src="p8.jpg"  alt="项目 8"></div>
+            <div class="item has-video" data-idx="9"  data-type="video"><img src="p9.jpg"  alt="项目 9"></div>
+            <div class="item" data-idx="10" data-type="reader" data-page="3"><img src="p10.jpg" alt="项目 10"></div>
+            <div class="item" data-idx="11" data-type="reader" data-page="3"><img src="p11.jpg" alt="项目 11"></div>
+            <div class="item" data-idx="12" data-type="reader" data-page="29"><img src="p12.jpg" alt="项目 12"></div>
+        </div>
+    </div>
+
+    <!-- 视频弹窗 -->
+    <div class="modal" id="video-modal">
+        <button class="modal-close" id="video-close" aria-label="关闭">✕</button>
+        <div class="video-box">
+            <video id="video-player" controls preload="metadata" playsinline>
+                <source src="video.mp4" type="video/mp4">
+            </video>
+        </div>
+    </div>
+
+    <!-- 作品集滚动阅读 -->
+    <div class="modal" id="reader-modal">
+        <button class="modal-close" id="reader-close" aria-label="关闭">✕</button>
+        <div class="reader" id="reader" tabindex="-1">
+            <div class="reader-track" id="reader-track"></div>
+        </div>
+        <div class="reader-progress" id="reader-progress">0 / 0</div>
+    </div>
+
+    <script>
+        // === 全局 modal 状态 ===
+        function anyModalOpen() {
+            return document.getElementById('reader-modal').classList.contains('active')
+                || document.getElementById('video-modal').classList.contains('active');
+        }
+
+        // --- 3D 轮播 ---
+        const items = document.querySelectorAll('.item');
+        const itemCount = items.length;
+        const theta = 360 / itemCount;
+        const world = document.getElementById('world');
+
+        let config = { radius: 10, tilt: 0 };
+
+        function updateMorphology() {
+            items.forEach((item, index) => {
+                const zOffset = index * 1;
+                item.style.transform = `
+                    rotateY(${theta * index}deg)
+                    translateX(${config.radius}px)
+                    translateZ(${zOffset}px)
+                    rotateX(${config.tilt}deg)
+                `;
+            });
+        }
+        updateMorphology();
+
+        setInterval(() => {
+            config.radius = Math.floor(Math.random() * 200);
+            config.tilt = Math.floor(Math.random() * 120) - 60;
+            updateMorphology();
+        }, 7000);
+
+        let isDragging = false;
+        let startX, startY;
+        let currentRotX = -15;
+        let currentRotY = 30;
+        let currentScale = 1;
+        const autoRotateSpeed = 0.15;
+
+        function animate() {
+            if (!isDragging) currentRotY += autoRotateSpeed;
+            world.style.transform = `scale(${currentScale}) rotateX(${currentRotX}deg) rotateY(${currentRotY}deg)`;
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // 滚轮/拖动/缩放手势:modal 打开时直接屏蔽,不再响应该层
+        document.addEventListener('pointerdown', (e) => {
+            if (anyModalOpen()) return;
+            if (e.target.tagName.toLowerCase() === 'img') return;
+            if (e.pointerType === 'touch' && !e.isPrimary) return;
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+        });
+        document.addEventListener('pointermove', (e) => {
+            if (anyModalOpen()) return;
+            if (!isDragging || (e.pointerType === 'touch' && !e.isPrimary)) return;
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+            currentRotY += deltaX * 0.4;
+            currentRotX -= deltaY * 0.4;
+            if (currentRotX > 85) currentRotX = 85;
+            if (currentRotX < -85) currentRotX = -85;
+            startX = e.clientX;
+            startY = e.clientY;
+        });
+        const endDrag = () => isDragging = false;
+        document.addEventListener('pointerup', endDrag);
+        document.addEventListener('pointercancel', endDrag);
+        document.addEventListener('wheel', (e) => {
+            if (anyModalOpen()) return;
+            currentScale -= e.deltaY * 0.002;
+            currentScale = Math.max(0.4, Math.min(3.5, currentScale));
+        }, { passive: true });
+
+        let initialPinchDistance = 0;
+        let startScale = 1;
+        document.addEventListener('touchstart', (e) => {
+            if (anyModalOpen()) return;
+            if (e.touches.length === 2) {
+                isDragging = false;
+                initialPinchDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                startScale = currentScale;
+            }
+        }, { passive: false });
+        document.addEventListener('touchmove', (e) => {
+            if (anyModalOpen()) return;
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                const currentPinchDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                const scaleFactor = currentPinchDistance / initialPinchDistance;
+                currentScale = startScale * scaleFactor;
+                currentScale = Math.max(0.4, Math.min(3.5, currentScale));
+            }
+        }, { passive: false });
+
+        // --- 视频弹窗 ---
+        const videoModal = document.getElementById('video-modal');
+        const videoPlayer = document.getElementById('video-player');
+        const videoClose = document.getElementById('video-close');
+
+        function openVideo() {
+            videoModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            videoPlayer.currentTime = 0;
+            const p = videoPlayer.play();
+            if (p !== undefined) p.catch(() => {});
+        }
+        function closeVideo() {
+            videoModal.classList.remove('active');
+            videoPlayer.pause();
+            videoPlayer.currentTime = 0;
+            document.body.style.overflow = '';
+        }
+        videoClose.addEventListener('click', closeVideo);
+        videoModal.addEventListener('click', (e) => {
+            if (e.target === videoModal) closeVideo();
+        });
+
+        // --- 作品集滚动阅读 ---
+        const readerModal = document.getElementById('reader-modal');
+        const reader = document.getElementById('reader');
+        const readerTrack = document.getElementById('reader-track');
+        const readerProgress = document.getElementById('reader-progress');
+        const readerClose = document.getElementById('reader-close');
+        const PAGE_COUNT = 31;
+
+        let pagesBuilt = false;
+        function buildPages() {
+            if (pagesBuilt) return;
+            const frag = document.createDocumentFragment();
+            for (let i = 1; i <= PAGE_COUNT; i++) {
+                const num = String(i).padStart(2, '0');
+                const img = document.createElement('img');
+                img.src = `pages/page-${num}.jpg`;
+                img.alt = `page ${i}`;
+                img.decoding = 'async';
+                img.loading = 'lazy';
+                // 临时占位比例(图片未加载时容器不塌缩),加载完会被真实比例覆盖
+                img.style.aspectRatio = '1 / 1.414';
+                frag.appendChild(img);
+            }
+            readerTrack.appendChild(frag);
+            pagesBuilt = true;
+
+            // 加载完的图片用真实宽高比覆盖占位,完全不变形
+            readerTrack.addEventListener('load', (e) => {
+                if (e.target.tagName !== 'IMG') return;
+                const im = e.target;
+                if (im.naturalWidth && im.naturalHeight) {
+                    im.style.aspectRatio = `${im.naturalWidth} / ${im.naturalHeight}`;
+                }
+            }, true);
+        }
+
+        function openReader(targetPage) {
+            buildPages();
+            readerModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            const idx = Math.max(0, Math.min(PAGE_COUNT - 1, (targetPage || 1) - 1));
+            const imgs = readerTrack.querySelectorAll('img');
+            const target = imgs[idx];
+            if (!target) return;
+
+            // 目标页关闭懒加载,确保立即下载(否则 load 事件可能迟迟不触发,定位失败)
+            target.loading = 'eager';
+
+            const doScroll = () => {
+                requestAnimationFrame(() => {
+                    target.scrollIntoView({ behavior: 'auto', block: 'start' });
+                    requestAnimationFrame(() => { reader.scrollTop -= 48; });
+                    updateProgress();
+                });
+            };
+
+            if (target.complete && target.naturalWidth > 0) {
+                doScroll();
+            } else {
+                target.addEventListener('load', doScroll, { once: true });
+                target.addEventListener('error', doScroll, { once: true });
+            }
+        }
+
+        function closeReader() {
+            readerModal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        readerClose.addEventListener('click', closeReader);
+
+        function updateProgress() {
+            const imgs = readerTrack.querySelectorAll('img');
+            if (!imgs.length) return;
+            const containerTop = reader.getBoundingClientRect().top;
+            const viewportMid = containerTop + reader.clientHeight / 2;
+            let cur = 1;
+            for (let i = 0; i < imgs.length; i++) {
+                const r = imgs[i].getBoundingClientRect();
+                if (r.top <= viewportMid) cur = i + 1;
+            }
+            readerProgress.textContent = `${cur} / ${imgs.length}`;
+        }
+        reader.addEventListener('scroll', updateProgress, { passive: true });
+
+        // --- 点击图片分发 ---
+        items.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const type = item.dataset.type;
+                if (type === 'video') {
+                    openVideo();
+                } else {
+                    const page = parseInt(item.dataset.page, 10) || 1;
+                    openReader(page);
+                }
+            });
+        });
+
+        // --- 键盘 ---
+        document.addEventListener('keydown', (e) => {
+            if (videoModal.classList.contains('active')) {
+                if (e.key === 'Escape') closeVideo();
+            }
+            if (readerModal.classList.contains('active')) {
+                if (e.key === 'Escape') closeReader();
+                if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S' || e.key === 'p' || e.key === 'P')) {
+                    e.preventDefault();
+                }
+            }
+        });
+
+        // 阻止图片拖拽
+        document.addEventListener('dragstart', e => {
+            if (e.target.tagName === 'IMG') e.preventDefault();
+        });
+    </script>
+</body>
+</html>
