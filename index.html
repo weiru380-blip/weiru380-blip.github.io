@@ -191,6 +191,7 @@
             gap: 24px;
             max-width: 900px;
             margin: 0 auto;
+            padding-bottom: 40px;
         }
 
         .reader-track img {
@@ -202,6 +203,24 @@
             box-shadow: 0 8px 32px rgba(0,0,0,0.5);
             user-select: none;
             -webkit-user-drag: none;
+        }
+
+        .back-to-top {
+            display: block;
+            margin: 32px auto 0;
+            padding: 12px 32px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: #ccc;
+            font-size: 13px;
+            letter-spacing: 1.5px;
+            border-radius: 24px;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+        }
+        .back-to-top:hover {
+            background: rgba(255,255,255,0.15);
+            color: #fff;
         }
 
         .reader-progress {
@@ -433,10 +452,16 @@
                 img.style.aspectRatio = '1 / 1.414';
                 frag.appendChild(img);
             }
+            const btn = document.createElement('button');
+            btn.className = 'back-to-top';
+            btn.textContent = '↑ 回到顶部';
+            btn.addEventListener('click', () => {
+                reader.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+            frag.appendChild(btn);
             readerTrack.appendChild(frag);
             pagesBuilt = true;
 
-            // 加载完的图片用真实宽高比覆盖占位,完全不变形
             readerTrack.addEventListener('load', (e) => {
                 if (e.target.tagName !== 'IMG') return;
                 const im = e.target;
