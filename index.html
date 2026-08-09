@@ -452,7 +452,7 @@
                 img.src = `pages/page-${num}.jpg`;
                 img.alt = `page ${i}`;
                 img.decoding = 'async';
-                img.loading = 'lazy';
+                img.loading = 'eager';
                 // 临时占位比例(图片未加载时容器不塌缩),加载完会被真实比例覆盖
                 img.style.aspectRatio = '1 / 1.414';
                 frag.appendChild(img);
