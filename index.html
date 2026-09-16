@@ -337,6 +337,46 @@
             .reader-toc:hover,
             .reader-toc.touch-open { width: min(220px, calc(100vw - 24px)); }
         }
+
+        /* Touch browsers may retain :hover after release; only touch-open may expand there. */
+        @media (hover: none) {
+            .reader-toc.force-collapsed {
+                width: 24px !important;
+                padding: 8px 0 !important;
+                border: 0 !important;
+                border-radius: 0 !important;
+                background: transparent !important;
+                box-shadow: none !important;
+                backdrop-filter: none !important;
+            }
+            .reader-toc.force-collapsed button {
+                padding: 0 !important;
+                color: transparent !important;
+            }
+            .reader-toc.force-collapsed button::after {
+                position: absolute;
+                right: 0;
+                margin-left: 0;
+            }
+            .reader-toc:hover:not(.touch-open) {
+                width: 24px;
+                padding: 8px 0;
+                border: 0;
+                border-radius: 0;
+                background: transparent;
+                box-shadow: none;
+                backdrop-filter: none;
+            }
+            .reader-toc:hover:not(.touch-open) button {
+                padding: 0;
+                color: transparent;
+            }
+            .reader-toc:hover:not(.touch-open) button::after {
+                position: absolute;
+                right: 0;
+                margin-left: 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -646,10 +686,12 @@
             touchTocTarget = null;
             touchTocPointerId = null;
             readerToc.classList.remove('touch-open');
+            readerToc.classList.add('force-collapsed');
         }
         readerToc.addEventListener('pointerdown', (event) => {
             if (event.pointerType !== 'touch') return;
             touchTocPointerId = event.pointerId;
+            readerToc.classList.remove('force-collapsed');
             readerToc.classList.add('touch-open');
             readerToc.setPointerCapture(event.pointerId);
             updateTouchTocTarget(event.clientX, event.clientY);
