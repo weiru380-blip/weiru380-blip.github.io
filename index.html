@@ -255,13 +255,13 @@
             transform: translateY(-50%);
             display: flex;
             flex-direction: column;
-            gap: 18px;
-            padding: 12px 0;
-            transition: width 0.2s ease, padding 0.2s ease;
+            gap: 8px;
+            padding: 8px 0;
+            will-change: width;
+            transition: width 0.28s cubic-bezier(0.22, 1, 0.36, 1), padding 0.28s cubic-bezier(0.22, 1, 0.36, 1), background 0.2s ease;
         }
-        .reader-toc:hover,
-        .reader-toc:focus-within {
-            width: min(300px, calc(100vw - 48px));
+        .reader-toc:hover {
+            width: min(240px, calc(100vw - 48px));
             padding: 12px;
             border: 1px solid rgba(255,255,255,0.14);
             border-radius: 14px;
@@ -272,17 +272,17 @@
         .reader-toc button {
             display: flex;
             align-items: center;
-            justify-content: flex-end;
+            justify-content: space-between;
             width: 100%;
-            min-height: 20px;
-            padding: 0;
+            height: 36px;
+            padding: 0 10px;
             border: 0;
             background: transparent;
             color: rgba(255,255,255,0.58);
             font: inherit;
             font-size: 13px;
             line-height: 1.3;
-            text-align: right;
+            text-align: left;
             cursor: pointer;
             white-space: nowrap;
             overflow: hidden;
@@ -294,7 +294,7 @@
             height: 2px;
             margin-left: 12px;
             background: rgba(255,255,255,0.55);
-            transition: background 0.2s ease;
+            transition: width 0.2s ease, flex-basis 0.2s ease, background 0.2s ease;
         }
         .reader-toc button:hover,
         .reader-toc button:focus-visible {
@@ -302,14 +302,20 @@
             outline: none;
         }
         .reader-toc button:hover {
-            padding: 8px 10px;
-            margin: -8px -10px;
             border-radius: 9px;
             background: rgba(255,255,255,0.1);
         }
+        .reader-toc button:hover::after {
+            flex-basis: 40px;
+            width: 40px;
+        }
         .reader-toc button.active::after { background: #fff; }
-        .reader-toc:not(:hover):not(:focus-within) button { font-size: 0; }
-        .reader-toc:not(:hover):not(:focus-within) button::after { margin-left: 0; }
+        .reader-toc:not(:hover) button { padding: 0; color: transparent; }
+        .reader-toc:not(:hover) button::after {
+            position: absolute;
+            right: 0;
+            margin-left: 0;
+        }
 
         @media (max-width: 768px) {
             :root { --item-width: 200px; --item-height: 124px; }
@@ -320,8 +326,7 @@
             .reader { padding: 36px 12px 60px; }
             .reader-track { gap: 16px; }
             .reader-toc { right: 12px; }
-            .reader-toc:hover,
-            .reader-toc:focus-within { width: min(280px, calc(100vw - 24px)); }
+            .reader-toc:hover { width: min(220px, calc(100vw - 24px)); }
         }
     </style>
 </head>
