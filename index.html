@@ -245,6 +245,72 @@
             user-select: none;
         }
 
+        /* --- 章节目录 --- */
+        .reader-toc {
+            position: fixed;
+            top: 50%;
+            right: 24px;
+            z-index: 10002;
+            width: 24px;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            padding: 12px 0;
+            transition: width 0.2s ease, padding 0.2s ease;
+        }
+        .reader-toc:hover,
+        .reader-toc:focus-within {
+            width: min(300px, calc(100vw - 48px));
+            padding: 12px;
+            border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 14px;
+            background: rgba(20,20,20,0.9);
+            box-shadow: 0 12px 36px rgba(0,0,0,0.35);
+            backdrop-filter: blur(12px);
+        }
+        .reader-toc button {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            width: 100%;
+            min-height: 20px;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: rgba(255,255,255,0.58);
+            font: inherit;
+            font-size: 13px;
+            line-height: 1.3;
+            text-align: right;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        .reader-toc button::after {
+            content: '';
+            flex: 0 0 20px;
+            width: 20px;
+            height: 2px;
+            margin-left: 12px;
+            background: rgba(255,255,255,0.55);
+            transition: background 0.2s ease;
+        }
+        .reader-toc button:hover,
+        .reader-toc button:focus-visible {
+            color: #fff;
+            outline: none;
+        }
+        .reader-toc button:hover {
+            padding: 8px 10px;
+            margin: -8px -10px;
+            border-radius: 9px;
+            background: rgba(255,255,255,0.1);
+        }
+        .reader-toc button.active::after { background: #fff; }
+        .reader-toc:not(:hover):not(:focus-within) button { font-size: 0; }
+        .reader-toc:not(:hover):not(:focus-within) button::after { margin-left: 0; }
+
         @media (max-width: 768px) {
             :root { --item-width: 200px; --item-height: 124px; }
             .ui-panel { left: 20px; top: 20px; }
@@ -253,6 +319,9 @@
             .modal-close { top: 14px; right: 14px; width: 38px; height: 38px; }
             .reader { padding: 36px 12px 60px; }
             .reader-track { gap: 16px; }
+            .reader-toc { right: 12px; }
+            .reader-toc:hover,
+            .reader-toc:focus-within { width: min(280px, calc(100vw - 24px)); }
         }
     </style>
 </head>
@@ -303,6 +372,14 @@
         <div class="reader" id="reader" tabindex="-1">
             <div class="reader-track" id="reader-track"></div>
         </div>
+        <nav class="reader-toc" id="reader-toc" aria-label="作品集章节目录">
+            <button type="button" data-page="2">个人简介</button>
+            <button type="button" data-page="4">B站品牌暂停广告</button>
+            <button type="button" data-page="8">B站AI助手体验设计</button>
+            <button type="button" data-page="12">B站创作激励体验改版</button>
+            <button type="button" data-page="15">EZVIZ&amp;Gitex迪拜展会</button>
+            <button type="button" data-page="18">今之六兿</button>
+        </nav>
         <div class="reader-progress" id="reader-progress">0 / 0</div>
     </div>
 
@@ -440,6 +517,7 @@
         const readerTrack = document.getElementById('reader-track');
         const readerProgress = document.getElementById('reader-progress');
         const readerClose = document.getElementById('reader-close');
+        const readerToc = document.getElementById('reader-toc');
         const PAGE_COUNT = 26;
 
         let pagesBuilt = false;
@@ -523,8 +601,19 @@
                 if (r.top <= viewportMid) cur = i + 1;
             }
             readerProgress.textContent = `${cur} / ${imgs.length}`;
+            const tocButtons = readerToc.querySelectorAll('button');
+            let activeIndex = 0;
+            tocButtons.forEach((button, index) => {
+                const page = parseInt(button.dataset.page, 10);
+                if (cur >= page) activeIndex = index;
+            });
+            tocButtons.forEach((button, index) => button.classList.toggle('active', index === activeIndex));
         }
         reader.addEventListener('scroll', updateProgress, { passive: true });
+
+        readerToc.querySelectorAll('button').forEach((button) => {
+            button.addEventListener('click', () => openReader(parseInt(button.dataset.page, 10)));
+        });
 
         // --- 点击图片分发 ---
         items.forEach(item => {
