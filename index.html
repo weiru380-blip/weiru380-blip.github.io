@@ -258,9 +258,11 @@
             gap: 8px;
             padding: 8px 0;
             will-change: width;
+            touch-action: none;
             transition: width 0.28s cubic-bezier(0.22, 1, 0.36, 1), padding 0.28s cubic-bezier(0.22, 1, 0.36, 1), background 0.2s ease;
         }
-        .reader-toc:hover {
+        .reader-toc:hover,
+        .reader-toc.touch-open {
             width: min(240px, calc(100vw - 48px));
             padding: 12px;
             border: 1px solid rgba(255,255,255,0.14);
@@ -305,13 +307,19 @@
             border-radius: 9px;
             background: rgba(255,255,255,0.1);
         }
-        .reader-toc button:hover::after {
+        .reader-toc button.touch-hover {
+            border-radius: 9px;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+        .reader-toc button:hover::after,
+        .reader-toc button.touch-hover::after {
             flex-basis: 40px;
             width: 40px;
         }
         .reader-toc button.active::after { background: #fff; }
-        .reader-toc:not(:hover) button { padding: 0; color: transparent; }
-        .reader-toc:not(:hover) button::after {
+        .reader-toc:not(:hover):not(.touch-open) button { padding: 0; color: transparent; }
+        .reader-toc:not(:hover):not(.touch-open) button::after {
             position: absolute;
             right: 0;
             margin-left: 0;
@@ -326,7 +334,8 @@
             .reader { padding: 36px 12px 60px; }
             .reader-track { gap: 16px; }
             .reader-toc { right: 12px; }
-            .reader-toc:hover { width: min(220px, calc(100vw - 24px)); }
+            .reader-toc:hover,
+            .reader-toc.touch-open { width: min(220px, calc(100vw - 24px)); }
         }
     </style>
 </head>
@@ -536,6 +545,7 @@
                 img.alt = `page ${i}`;
                 img.decoding = 'async';
                 img.loading = 'eager';
+                if (i === 1) img.fetchPriority = 'high';
                 // 临时占位比例(图片未加载时容器不塌缩),加载完会被真实比例覆盖
                 img.style.aspectRatio = '1 / 1.414';
                 frag.appendChild(img);
@@ -619,6 +629,45 @@
         readerToc.querySelectorAll('button').forEach((button) => {
             button.addEventListener('click', () => openReader(parseInt(button.dataset.page, 10)));
         });
+
+        // 手机端按住目录展开,滑动选中,松手后跳转并立即收起。
+        let touchTocPointerId = null;
+        let touchTocTarget = null;
+        function updateTouchTocTarget(x, y) {
+            const element = document.elementFromPoint(x, y);
+            const button = element && element.closest ? element.closest('#reader-toc button') : null;
+            if (!button || !readerToc.contains(button)) return;
+            if (touchTocTarget) touchTocTarget.classList.remove('touch-hover');
+            touchTocTarget = button;
+            touchTocTarget.classList.add('touch-hover');
+        }
+        function resetTouchToc() {
+            if (touchTocTarget) touchTocTarget.classList.remove('touch-hover');
+            touchTocTarget = null;
+            touchTocPointerId = null;
+            readerToc.classList.remove('touch-open');
+        }
+        readerToc.addEventListener('pointerdown', (event) => {
+            if (event.pointerType !== 'touch') return;
+            touchTocPointerId = event.pointerId;
+            readerToc.classList.add('touch-open');
+            readerToc.setPointerCapture(event.pointerId);
+            updateTouchTocTarget(event.clientX, event.clientY);
+            event.preventDefault();
+        });
+        readerToc.addEventListener('pointermove', (event) => {
+            if (event.pointerType !== 'touch' || event.pointerId !== touchTocPointerId) return;
+            updateTouchTocTarget(event.clientX, event.clientY);
+            event.preventDefault();
+        });
+        readerToc.addEventListener('pointerup', (event) => {
+            if (event.pointerType !== 'touch' || event.pointerId !== touchTocPointerId) return;
+            const page = touchTocTarget ? parseInt(touchTocTarget.dataset.page, 10) : 1;
+            resetTouchToc();
+            openReader(page);
+            event.preventDefault();
+        });
+        readerToc.addEventListener('pointercancel', resetTouchToc);
 
         // --- 点击图片分发 ---
         items.forEach(item => {
